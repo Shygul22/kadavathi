@@ -238,9 +238,11 @@ const AuthForm: React.FC = () => {
         <div className="mt-6 p-4 bg-gray-50 rounded-xl">
           <p className="text-sm font-medium text-gray-700 mb-2">Demo Accounts:</p>
           <div className="text-xs text-gray-600 space-y-1">
-            <div>Customer: customer@demo.com / password123</div>
-            <div>Restaurant: restaurant@demo.com / password123</div>
-            <div>Delivery: delivery@demo.com / password123</div>
+            <div className="text-orange-600 font-medium mb-1">⚠️ Demo accounts need to be created first</div>
+            <div>Create accounts with these credentials:</div>
+            <div>• customer@demo.com / password123 (Customer)</div>
+            <div>• restaurant@demo.com / password123 (Restaurant)</div>
+            <div>• delivery@demo.com / password123 (Delivery Partner)</div>
           </div>
         </div>
       </div>
