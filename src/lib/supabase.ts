@@ -149,6 +149,21 @@ export const restaurantApi = {
     return data;
   },
 
+  getRecommended: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase.rpc('get_recommended_restaurants', {
+      p_user_id: user.id
+    });
+
+    if (error) {
+      console.error('Error fetching recommended restaurants:', error);
+      throw error;
+    }
+    return data;
+  },
+
   getById: async (id: string) => {
     const { data, error } = await supabase
       .from('restaurants')

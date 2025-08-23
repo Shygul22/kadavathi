@@ -16,10 +16,22 @@ const CustomerDashboard: React.FC = () => {
   const [menuLoading, setMenuLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [recommendedRestaurants, setRecommendedRestaurants] = useState<Restaurant[]>([]);
 
   React.useEffect(() => {
     loadRestaurants();
+    loadRecommendedRestaurants();
   }, []);
+
+  const loadRecommendedRestaurants = async () => {
+    try {
+      const data = await restaurantApi.getRecommended();
+      setRecommendedRestaurants(data);
+    } catch (error) {
+      console.error('Error loading recommended restaurants:', error);
+      // Optional: handle error silently
+    }
+  };
 
   const loadRestaurants = async () => {
     try {
@@ -258,6 +270,49 @@ const CustomerDashboard: React.FC = () => {
       ) : (
         /* Restaurant List View */
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Recommended for you */}
+          {recommendedRestaurants.length > 0 && (
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">Recommended for You</h2>
+              <div className="flex space-x-6 overflow-x-auto pb-4 -mx-4 px-4">
+                {recommendedRestaurants.map((restaurant) => (
+                  <div
+                    key={restaurant.id}
+                    onClick={() => loadMenu(restaurant)}
+                    className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group w-64 flex-shrink-0"
+                  >
+                    <div className="relative">
+                      <img
+                        src={restaurant.image_url || 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=300'}
+                        alt={restaurant.name}
+                        className="w-full h-32 object-cover rounded-t-2xl"
+                      />
+                      {restaurant.is_featured && (
+                        <span className="absolute top-2 left-2 bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                          Featured
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <h3 className="font-semibold text-gray-800 truncate">{restaurant.name}</h3>
+                      <p className="text-gray-600 text-sm mb-2">{restaurant.cuisine_type}</p>
+                      <div className="flex items-center justify-between text-sm text-gray-500">
+                        <div className="flex items-center">
+                          <Star size={14} className="text-yellow-400 fill-current mr-1" />
+                          <span>{restaurant.rating}</span>
+                        </div>
+                        <div className="flex items-center">
+                          <Clock size={14} className="mr-1" />
+                          <span>{restaurant.delivery_time_min}-{restaurant.delivery_time_max} min</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Search and Filters */}
           <div className="mb-8">
             <div className="flex flex-col sm:flex-row gap-4 mb-6">
