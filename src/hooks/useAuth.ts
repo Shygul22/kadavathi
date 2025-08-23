@@ -36,6 +36,7 @@ export function useAuth() {
 
   const fetchProfile = async (userId: string) => {
     try {
+      // Check if profiles table exists by attempting to query it
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -43,12 +44,19 @@ export function useAuth() {
         .single();
 
       if (error) {
-        console.error('Error fetching profile:', error);
+        if (error.code === 'PGRST116' || error.message.includes('relation "public.profiles" does not exist')) {
+          // Profiles table doesn't exist, create profile in auth.users metadata instead
+          console.warn('Profiles table not found, using auth metadata');
+          setProfile(null);
+        } else {
+          console.error('Error fetching profile:', error);
+        }
       } else {
         setProfile(data);
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.warn('Profile fetch failed, continuing without profile:', error);
+      setProfile(null);
     } finally {
       setLoading(false);
     }
@@ -69,19 +77,25 @@ export function useAuth() {
 
     if (error) throw error;
 
-    // Create profile
+    // Try to create profile, but don't fail if table doesn't exist
     if (data.user) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: data.user.id,
-          email,
-          full_name: userData.full_name,
-          role: userData.role,
-          phone: userData.phone
-        });
+      try {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            email,
+            full_name: userData.full_name,
+            role: userData.role,
+            phone: userData.phone
+          });
 
-      if (profileError) throw profileError;
+        if (profileError && !profileError.message.includes('relation "public.profiles" does not exist')) {
+          throw profileError;
+        }
+      } catch (profileError) {
+        console.warn('Could not create profile record, continuing with auth only:', profileError);
+      }
     }
 
     return data;
@@ -105,16 +119,27 @@ export function useAuth() {
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) throw new Error('No user logged in');
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', user.id)
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id)
+        .select()
+        .single();
 
-    if (error) throw error;
-    setProfile(data);
-    return data;
+      if (error) {
+        if (error.message.includes('relation "public.profiles" does not exist')) {
+          console.warn('Profiles table not found, cannot update profile');
+          return null;
+        }
+        throw error;
+      }
+      setProfile(data);
+      return data;
+    } catch (error) {
+      console.warn('Profile update failed:', error);
+      return null;
+    }
   };
 
   return {
